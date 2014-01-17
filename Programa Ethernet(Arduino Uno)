@@ -1,0 +1,99 @@
+#include <SPI.h>
+#include <Ethernet.h>
+
+// Enter a MAC address and IP address for your controller below.
+// The IP address will be dependent on your local network.
+// gateway and subnet are optional:
+byte mac[] = {0x90, 0xA2, 0xDA, 0x0D, 0xAB, 0xAE };
+IPAddress ip(192,168,1, 19);
+
+IPAddress server(192,168,1,13);
+
+int SISTEMA = 6;
+int RESPUESTA = 8;
+int Despertar = 9;
+int ALARMA = 5;
+int Estado_Alarma = 0;
+
+
+
+EthernetClient client;
+boolean alreadyConnected = false; // whether or not the client was connected previously
+
+void setup() {
+  
+  pinMode(ALARMA, INPUT);
+  pinMode(RESPUESTA, OUTPUT);
+  pinMode(SISTEMA,OUTPUT);
+  pinMode(Despertar,OUTPUT);
+  
+  // initialize the ethernet device
+  Ethernet.begin(mac, ip);
+
+ // Open serial communications and wait for port to open:
+  Serial.begin(9600);
+ if(client.connect(server,2000)){
+ Serial.println("Connected");
+ }else{
+   Serial.println("Connection failed");
+ }
+
+  Serial.print("Chat client address:");
+  Serial.println(Ethernet.localIP());
+}
+
+void loop() {
+    
+   Estado_Alarma = digitalRead(ALARMA);
+
+       if(Estado_Alarma == HIGH){
+        Serial.print(5);
+        client.println(5);
+        client.flush();
+        while(Estado_Alarma == HIGH){
+        Estado_Alarma = digitalRead(ALARMA);
+        }
+   }
+  
+  
+   if(client.available()){
+   char c = client.read();
+   Serial.print(c);
+   
+   
+     if(c == '2')
+  {
+       client.println("OK");
+       client.flush();
+       digitalWrite(SISTEMA,HIGH);
+       delay(1000);
+       digitalWrite(SISTEMA,LOW);
+       c = NULL; 
+  }
+  if(c == '3')
+  {
+    client.println("Ok");
+    client.flush();
+    digitalWrite(Despertar,HIGH);
+    delay(1000);
+    digitalWrite(Despertar,LOW);
+    c= NULL;
+  }
+
+   }
+
+
+   while(Serial.available() > 0){
+   char inChar = Serial.read();
+   if(client.connected()){
+     client.print(inChar);
+   }
+   }
+
+  
+  if(!client.connected()){
+  client.stop();
+ client.connect(server,2000);
+  }
+    
+  }
